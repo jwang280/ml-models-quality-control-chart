@@ -8,7 +8,3 @@ This Quality Control Chart is to make sure that the model prediction process pre
 
 Quality Control Chart can give us a warning if non-random variation or signal presented, which is not normally present in the system and makes the process unpredictable.
 
----------------------------------------------------------------------------------------------------
-|Measurement | Mean breaches | Mean runs | Standard deviation breaches | SD runs |     Overall    |
-|Memory	     |      6	       |     1	   |             0	             |     0	 | Out of control |
-|Prediction	 |      0	       |     0	   |             0	             |     1	 | Out of control |
