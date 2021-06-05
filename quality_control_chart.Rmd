@@ -1,0 +1,140 @@
+---
+title: "Quality Control Charts"
+author: "Jiangwei Wang (19364744)"
+output: html_notebook
+---
+
+There are some unignorable issues with learned models in a production situation after a period of time such as:
+
+Hardware / Software issues - especially memory leaks and server upgrades
+Model decay
+Data Drift - changes in data collection methodology
+Concept Drift - the way we think about the model’s goal can evolve
+
+This Quality Control Chart is to make sure that the model prediction process predictable and within limits only with random variation or noise.
+
+Quality Control Chart can give us a warning if non-random variation or signal presented, which is not normally present in the system and makes the process unpredictable.
+
+The file we are going to work with for our model quality contro is called monitor.csv contains comma separated data. 
+
+The columns are:
+
+Timestamp              - the timestamp of a model prediction being run
+ProcessMemory      - the allocated memory (MB) of the relevant server process
+Prediction                - the value predicted by the model
+PredictionTimeMS   - the duration of the prediction task in milliseconds
+Using the supplied CSV data, generate control charts and answer the following questions:
+
+The problems we are going to solve:
+
+a) Is the memory usage of the server in control?
+
+b) Is the prediction time of the model in control?
+
+c) Is the stream of predictions in control?
+
+First, we load the package needed to plot the control charts. "qicharts" will no longer be maintained. We are now move to "qicharts2".
+```{r}
+library(qicharts2)
+```
+
+Load the dataset.
+```{r}
+data <- read.csv("./monitor.csv", header = TRUE)
+```
+
+View the dataset.
+```{r}
+data
+```
+
+Convert the Timestamp column to a correct date and time data type.
+```{r}
+data$Timestamp <- as.POSIXct(data$Timestamp, "%Y/%m/%d %H:%M", tz="UTC")
+```
+
+Add a new column with date only, which we are going to use it to group consecutive observations and calculate their sample statistics in each day for our control charts to analyse by day.
+```{r}
+data$Date <- as.Date(format(data$Timestamp, "%Y-%m-%d"))
+```
+
+View our dataset to make sure the date column is presenting correctly in a correct data type.
+```{r}
+data
+```
+
+Plot a XBAR plot to show the mean of process memory's variation, and limits are are learnt from first 30 days.
+```{r}
+pm_xbar <- qicharts2::qic(x = Date, y = ProcessMemory, data = data, chart = "xbar", freeze = 30, title = 'Memory Usage of Server (XBAR-Chart)', subtitle = "Limits learnt from first 30 days",  ylab  = 'Memory Size (MB)', xlab  = 'Prediction Date')
+plot(pm_xbar)
+```
+the plot is showing this dataset is from Feb 1st to June 1st, the dot line is cutoff point of the first 30 days and the rest. There are 6 red points between the end of Aril till the end of May showing on this plot, which means they are out of limit.
+
+Let's show the summary.
+```{r}
+summary(pm_xbar)
+```
+There are 122 observations in total means there are 122 groups or 122 days in this dataset. The runs.signal is flagged as showing 1, which dues to the longest run is not suppose be more than 10, but there are 43 counted, and the number of crossings  should be no less than 51, but there are only 39 counted. The sigma.signal is showing 6, which related to the 6 red points we spotted before,  means it breaches the limit 6 times. This process is said to be “out-of-control” with respect to the XBAR-Chart.
+
+
+Plot a S chart to show the standard deviations of process memory's variability.
+```{r}
+pm_s <- qicharts2::qic(x = Date, y = ProcessMemory, data = data, chart = "s", freeze = 30, title = 'Memory Usage of Server (S-Chart)', subtitle = "Limits learnt from first 30 days",  ylab  = 'Memory Size (MB)', xlab  = 'Prediction Date')
+plot(pm_s)
+```
+The is no red ponit showing. There is one pooint luckily just on the edge of the limit towards the second half of April.
+
+```{r}
+summary(pm_s)
+```
+Both runs.signal and sigma.signal are showing 0, this process is said to be “in-control” with respect to the S-Chart.
+However, the XBAR-Chart shows the mean variaton of the process memory is ou of control, the process is still out of contro with the consideration of both charts.
+
+Now we move on to the stream of predictions part.
+```{r}
+pd_xbar <- qicharts2::qic(x = Date, y = Prediction, data = data, chart = "xbar", freeze = 30, title = 'Stream of Predictions (XBAR-Chart)', subtitle = "Limits learnt from first 30 days",  ylab  = 'Stream Value', xlab  = 'Prediction Date')
+plot(pd_xbar)
+```
+Ther are no red point by visualize.
+
+```{r}
+summary(pd_xbar)
+```
+Both runs.signal and sigma.signal are showing 0, this process is said to be “in-control” with respect to the XBAR-Chart.
+
+How about S-Chart.
+```{r}
+pd_s <- qicharts2::qic(x = Date, y = Prediction, data = data, chart = "s", freeze = 30, title = 'Stream of Predictions (S-Chart)', subtitle = "Limits learnt from first 30 days",  ylab  = 'Stream Value', xlab  = 'Prediction Date')
+plot(pd_s)
+```
+There is no red poingts showing, but we can see a patchy of points are below the mean.
+
+```{r}
+summary(pd_s)
+```
+From here awe can see, sigma.signal is 0, but runs.signal flagged, beacause longest run 51 > maximum longest run limit 10, or number of crossings 34 < minimum number of crossings 51. This process is said to be "out-of-control" with respect to S-Chart.
+
+What about the prediction time?
+```{r}
+pt_xbar <- qicharts2::qic(x = Date, y = PredictionTimeMS, data = data, chart = "xbar", freeze = 30, title = 'Prediction Time (XBAR-Chart)', subtitle = "Limits learnt from first 30 days",  ylab  = 'Millisecond', xlab  = 'Prediction Date')
+plot(pt_xbar)
+```
+There are no red points, but there are two points tries to reach the edge of the limits arround the first half of May.
+
+```{r}
+summary(pt_xbar)
+```
+Sigma.signal is 0, but runs.signal is flagged, because 12 > 10 or 50 < 51. This process is said to be "out-of-control" with respect to XBAR-Chart.
+
+```{r}
+pt_s <- qicharts2::qic(x = Date, y = PredictionTimeMS, data = data, chart = "s", freeze = 30, title = 'Prediction Time (S-Chart)', subtitle = "Limits learnt from first 30 days",  ylab  = 'Millisecond', xlab  = 'Prediction Date')
+plot(pt_s)
+```
+There are 7 red points showing from the plot.
+
+```{r}
+summary(pt_s)
+```
+Sigma.signal tells us it beaches the limit 7 times. Runs.signal flagged because 35 > 10 or 27 < 51. There This process is said to be "out-of-control" with respect to S-Chart.
+
+End of notebook
