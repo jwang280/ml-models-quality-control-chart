@@ -12,5 +12,3 @@ Quality Control Chart can give us a warning if non-random variation or signal pr
 |Measurement | Mean breaches | Mean runs | Standard deviation breaches | SD runs |     Overall    |
 |Memory	     |      6	       |     1	   |             0	             |     0	 | Out of control |
 |Prediction	 |      0	       |     0	   |             0	             |     1	 | Out of control |
-|Time	       |      0	       |     1	   |             7	             |     1	 | Out of control |
----------------------------------------------------------------------------------------------------
